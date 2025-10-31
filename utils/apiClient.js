@@ -1,8 +1,7 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || ['http://localhost:5001/api','https://zhq5zx35-5000.uks1.devtunnels.ms/api','https://zhq5zx35-5001.uks1.devtunnels.ms/api'];
-
+const API_BASE_URL = 'https://nuzihi-backend.vercel.app/api'
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
