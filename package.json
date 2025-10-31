@@ -1,0 +1,43 @@
+{
+  "name": "afyanafsi-backend",
+  "version": "1.0.0",
+  "description": "AfyaNafsi Mental Health Platform Backend",
+  "keywords": [
+    "mental-health",
+    "therapy",
+    "booking"
+  ],
+  "homepage": "https://github.com/Nuzihi-Organization/backend#readme",
+  "bugs": {
+    "url": "https://github.com/Nuzihi-Organization/backend/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nuzihi-Organization/backend.git"
+  },
+  "license": "MIT",
+  "author": "Dev Mande",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed": "node seeders/seedDatabase.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "express-session": "^1.18.2",
+    "google-auth-library": "^9.0.0",
+    "http": "^0.0.1-security",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.8.7",
+    "nodemailer": "^6.9.4",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
