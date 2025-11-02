@@ -1,9 +1,8 @@
-
 import dotenv from 'dotenv';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import http from'http';
+import http from 'http';
 import { Server } from 'socket.io';
 import setupChatSocket from './socket/chatSocket.js';
 import authRoutes from './routes/authRoutes.js';
@@ -12,72 +11,68 @@ import userRoutes from './routes/userRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
 import adminAuthRoutes from './routes/adminAuthRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
-import peerSpacesRoutes from'./routes/peerSpaces.js';
+import peerSpacesRoutes from './routes/peerSpaces.js';
 import RoomHistory from './models/RoomHistory.js';
-
-
 
 dotenv.config();
 
 const app = express();
-
 const server = http.createServer(app);
 
-
+//  only actual origins
 const allowedOrigins = [
-  "*",
   "http://localhost:5173",
   "https://zhq5zx35-5173.uks1.devtunnels.ms",
-  "https://nuzihi-web.netlify.app/",
+  "https://nuzihi-web.netlify.app",
   "https://www.nuzihi.org"
 ];
 
+//  Enable CORS for Express 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log('❌ CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true
 }));
 
+// Middleware 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Socket.IO setup with CORS
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins, // Your React app URLs
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true
   },
-  transports: ['websocket', 'polling']
+  transports: ['websocket', 'polling'],
+  // connection handling
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
-// Middleware
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
-app.use(express.json());
+// MongoDB connection 
+const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 
+  'mongodb+srv://jassymande:xHTJCw7y5KRKCJuZ@nuzihi.qd9fjiv.mongodb.net/?retryWrites=true&w=majority&appName=Nuzihi';
 
-
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ MongoDB Connected'))
+.catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // Socket setup
 setupChatSocket(io);
-
-// MongoDB connection (if needed)
-mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://jassymande:xHTJCw7y5KRKCJuZ@nuzihi.qd9fjiv.mongodb.net/?retryWrites=true&w=majority&appName=Nuzihi', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
-  console.log('✅ MongoDB connected');
-}).catch((err) => {
-  console.error('❌ MongoDB connection error:', err);
-});
-
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // Socket.IO connection handler
 io.on('connection', (socket) => {
@@ -95,7 +90,7 @@ io.on('connection', (socket) => {
       // Notify room
       io.to(roomId).emit('user-joined', { 
         pseudonym, 
-        activeCount: 1 // You'll calculate this from your DB
+        activeCount: 1
       });
 
       // Send test messages
@@ -144,7 +139,6 @@ io.on('connection', (socket) => {
   // Add reaction
   socket.on('add-reaction', ({ messageId, reactionType }) => {
     console.log('Reaction added:', messageId, reactionType);
-    // You'll update your DB here
   });
 
   // Leave room
@@ -161,17 +155,14 @@ io.on('connection', (socket) => {
     console.log('❌ User disconnected:', socket.id);
   });
 });
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB Connected'))
-.catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // Routes
 app.get('/', (req, res) => {
-  res.json({ message: 'AfyaNafsi API Server Running', version: '1.0.0' });
+  res.json({ 
+    message: 'AfyaNafsi API Server Running', 
+    version: '1.0.0',
+    socketConnected: io.engine.clientsCount
+  });
 });
 
 app.use('/api/auth', authRoutes);
@@ -184,7 +175,7 @@ app.use('/api/peer-spaces', peerSpacesRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error:', err.message);
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal Server Error',
@@ -201,8 +192,11 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+
+// server calls
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log('Socket.IO Server is running');
+  console.log('✅ Socket.IO Server is running');
+  console.log('✅ Allowed origins:', allowedOrigins);
 });

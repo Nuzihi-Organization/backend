@@ -1,12 +1,14 @@
-
 import axios from 'axios';
 
 const API_BASE_URL = 'https://backend-xptt.onrender.com/api';
+
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  withCredentials: true, //  for CORS with credentials
+  timeout: 15000 //  15 second timeout for Render cold starts
 });
 
 // Request interceptor to add auth token
@@ -29,7 +31,20 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If error is 401 and we haven't tried to refresh yet
+    //  error logging
+    if (error.response) {
+      console.error('API Error:', {
+        status: error.response.status,
+        url: originalRequest.url,
+        message: error.response.data?.message
+      });
+    } else if (error.request) {
+      console.error('Network Error: No response received', {
+        url: originalRequest.url
+      });
+    }
+
+    // If error is 401 and i haven't tried to refresh yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -41,15 +56,22 @@ apiClient.interceptors.response.use(
         }
 
         // Call refresh token endpoint
-        const response = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
-          refreshToken
-        });
+        const response = await axios.post(
+          `${API_BASE_URL}/auth/refresh-token`,
+          { refreshToken },
+          {
+            withCredentials: true, //  for CORS with credentials
+            timeout: 10000
+          }
+        );
 
         const { accessToken, refreshToken: newRefreshToken } = response.data.data;
 
         // Update tokens in localStorage
         localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', newRefreshToken);
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken);
+        }
 
         // Update the failed request with new token
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
@@ -57,11 +79,16 @@ apiClient.interceptors.response.use(
         // Retry the original request
         return apiClient(originalRequest);
       } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError.message);
         // Refresh failed, clear tokens and redirect to login
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        
+        // Only redirect if not already on login page
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       }
     }
