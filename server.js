@@ -87,7 +87,14 @@ setupChatSocket(io);
 
 // Socket.IO connection handler
 io.on('connection', (socket) => {
-  console.log('✅ User connected:', socket.id);
+  const transport = socket.conn.transport.name; // 'polling' or 'websocket'
+  console.log('✅ User connected:', socket.id, 'via', transport);
+
+  // Monitor transport upgrades
+  socket.conn.on('upgrade', () => {
+    const upgradedTransport = socket.conn.transport.name;
+    console.log('🔄 Transport upgraded to:', upgradedTransport);
+  });
 
   // Test event
   socket.emit('welcome', { message: 'Welcome to Peer Spaces!' });
@@ -176,6 +183,16 @@ app.get('/', (req, res) => {
   });
 });
 
+// Socket.IO health check
+app.get('/socket-test', (req, res) => {
+  res.json({
+    socketIO: 'Socket.IO is attached',
+    path: '/socket.io/',
+    clients: io.engine?.clientsCount || 0,
+    test: 'Try connecting to wss://backend-xptt.onrender.com/socket.io/'
+  });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/therapists', therapistRoutes);
@@ -206,8 +223,12 @@ const PORT = process.env.PORT || 5000;
 
 // server calls
 server.listen(PORT, '0.0.0.0', () => {
+  console.log('='.repeat(50));
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log('✅ Socket.IO Server is running');
-  console.log('✅ Allowed origins:', allowedOrigins);
+  console.log(`✅ Socket.IO attached to server`);
+  console.log(`✅ Socket.IO path: /socket.io/`);
+  console.log(`✅ Allowed origins:`, allowedOrigins);
+  console.log(`🔗 Test Socket.IO at: https://backend-xptt.onrender.com/socket.io/`);
+  console.log('='.repeat(50));
 });
