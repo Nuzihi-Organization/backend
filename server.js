@@ -19,7 +19,7 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-//  only actual origins
+// actual origins
 const allowedOrigins = [
   "http://localhost:5173",
   "https://zhq5zx35-5173.uks1.devtunnels.ms",
@@ -27,7 +27,7 @@ const allowedOrigins = [
   "https://www.nuzihi.org"
 ];
 
-//  Enable CORS for Express 
+//  CORS for Express 
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
@@ -52,12 +52,23 @@ const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
     methods: ["GET", "POST"],
-    credentials: true
+    credentials: false //  Set to false for Render compatibility
   },
-  transports: ['websocket', 'polling'],
-  // connection handling
+  // CRITICAL: Start with polling for Render
+  transports: ['polling', 'websocket'],
+  allowUpgrades: true,
+  
+  // Longer timeouts for Render's environment
   pingTimeout: 60000,
-  pingInterval: 25000
+  pingInterval: 25000,
+  
+  // compatible settings for Render
+  allowEIO3: true, // Support older clients
+  path: '/socket.io/',
+  serveClient: false,
+  
+  // Handle connection state
+  connectTimeout: 45000
 });
 
 // MongoDB connection 
