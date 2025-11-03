@@ -32,6 +32,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  phone: {
+    type: String,
+    default: ''
+  },
+  dateOfBirth: {
+    type: Date,
+    default: null
+  },
+  bio: {
+    type: String,
+    default: ''
+  },
   role: {
     type: String,
     default: 'user',
@@ -41,6 +53,28 @@ const userSchema = new mongoose.Schema({
     therapyTypes: [String],
     preferredModes: [String],
     location: String
+  },
+  notificationPreferences: {
+    email: {
+      type: Boolean,
+      default: true
+    },
+    sms: {
+      type: Boolean,
+      default: false
+    },
+    appointments: {
+      type: Boolean,
+      default: true
+    },
+    newsletters: {
+      type: Boolean,
+      default: true
+    }
+  },
+  profileCompleted: {
+    type: Boolean,
+    default: false
   },
   bookings: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -56,15 +90,28 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Check if profile is complete before saving
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
+  // Hash password if modified
+  if (this.isModified('password') && this.password) {
+    try {
+      const salt = await bcrypt.genSalt(10);
+      this.password = await bcrypt.hash(this.password, salt);
+    } catch (error) {
+      return next(error);
+    }
   }
+
+  // Check profile completion (all required fields except bio)
+  this.profileCompleted = !!(
+    this.name &&
+    this.email &&
+    this.phone &&
+    this.dateOfBirth &&
+    this.preferences?.location
+  );
+
+  next();
 });
 
 userSchema.methods.comparePassword = async function(candidatePassword) {
