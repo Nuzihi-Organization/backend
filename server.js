@@ -44,8 +44,11 @@ app.use(cors({
 }));
 
 // Middleware 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' })); // For JSON payloads (base64 images)
+app.use(express.urlencoded({ 
+  extended: true, 
+  limit: '50mb' // For form data
+}));
 
 // Socket.IO setup with CORS
 const io = new Server(server, {
@@ -54,7 +57,7 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
     credentials: false //  Set to false for Render compatibility
   },
-  // CRITICAL: Start with polling for Render
+  //  Start with polling for Render
   transports: ['polling', 'websocket'],
   allowUpgrades: true,
   
@@ -210,6 +213,14 @@ app.use((err, req, res, next) => {
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
+
+if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      success: false,
+      message: 'File too large. Maximum size is 50MB.',
+      error: 'PAYLOAD_TOO_LARGE'
+    });
+  }
 
 // 404 handler
 app.use((req, res) => {
