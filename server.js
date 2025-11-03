@@ -214,13 +214,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-if (err.type === 'entity.too.large') {
-    return res.status(413).json({
-      success: false,
-      message: 'File too large. Maximum size is 50MB.',
-      error: 'PAYLOAD_TOO_LARGE'
-    });
-  }
+
 
 // 404 handler
 app.use((req, res) => {
