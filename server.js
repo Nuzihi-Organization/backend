@@ -13,6 +13,7 @@ import adminAuthRoutes from './routes/adminAuthRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import peerSpacesRoutes from './routes/peerSpaces.js';
 import RoomHistory from './models/RoomHistory.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 dotenv.config();
 
@@ -200,6 +201,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/therapists', therapistRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/auth/admin', adminAuthRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/peer-spaces', peerSpacesRoutes);
